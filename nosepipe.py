@@ -154,7 +154,7 @@ class SubprocessTestProxy(object):
                                      stderr=subprocess.STDOUT,
                                      shell=useshell,
                                      )
-        except OSError, e:
+        except OSError as e:
             raise Exception("Error running %s [%s]" % (argv[0], e))
 
         try:
@@ -203,7 +203,7 @@ class ProcessIsolationPlugin(nose.plugins.Plugin):
         # When not running directly as nosetests, we need to run the
         # sub-processes as `nosetests`, not `setup.py nosetests` as the output
         # of setup.py interferes with the nose output.  So, we need to find
-        # where nosetests # is on the command-line and then run the
+        # where nosetests is on the command-line and then run the
         # sub-processes command-line using the args from that location.
 
         nosetests_index = None

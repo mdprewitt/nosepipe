@@ -15,7 +15,7 @@ import sys
 
 import nose.plugins
 
-__version__ = "0.5-post3"
+__version__ = "0.5"
 
 SUBPROCESS_ENV_KEY = "NOSE_WITH_PROCESS_ISOLATION_REPORTER"
 
@@ -195,34 +195,44 @@ class ProcessIsolationPlugin(nose.plugins.Plugin):
         nose.plugins.Plugin.__init__(self)
         self._test = None
         self._test_proxy = None
-        nosearg = None
+
+        # Normally, nose is called as:
+        #     nosetests {opt1} {opt2} ...
+        # However, we can also be run as:
+        #     setup.py nosetests {opt1} {opt2} ...
+        # When not running directly as nosetests, we need to run the
+        # sub-processes as `nosetests`, not `setup.py nosetests` as the output
+        # of setup.py interferes with the nose output.  So, we need to find
+        # where nosetests # is on the command-line and then run the
+        # sub-processes command-line using the args from that location.
+
+        nosetests_index = None
+        # Find where nosetests is in argv and start the new argv from there.
         for i in range(0, len(sys.argv)):
             if 'nosetests' in sys.argv[i]:
                 self._argv = [sys.argv[i]]
-                nosearg = i
+                nosetests_index = i
                 break
 
-        if nosearg is None:
+        if nosetests_index is None:
             raise Exception("nosetests not found in command-line")
 
-        # self._argv = [os.path.abspath(sys.argv[0])]
-        # if 'nosetests' not in sys.argv[0]:
-        #     for i in range(1, len(sys.argv)):
-        #         self._argv += [sys.argv[i]]
-        #         if 'nosetests' in sys.argv[i]:
-        #             break
-
         self._argv += ['--with-process-isolation-reporter']
-        self._argv += ProcessIsolationPlugin._get_nose_whitelisted_argv(nosearg=nosearg)
+        # add the rest of the args that appear in argv after `nosetests`
+        self._argv += ProcessIsolationPlugin._get_nose_whitelisted_argv(
+            offset=nosetests_index + 1)
         # Getting cwd inside SubprocessTestProxy.__call__ is too late - it is
         # already changed by nose
         self._cwd = os.getcwd()
 
     @staticmethod
-    def _get_nose_whitelisted_argv(nosearg=0):
+    def _get_nose_whitelisted_argv(offset=1):
         # This is the list of nose options which should be passed through to
         # the launched process; boolean value defines whether the option
         # takes a value or not.
+        #
+        # offset: int, the argv index of the first nosetests option.
+        #
         whitelist = {
             '--debug-log': True,
             '--logging-config': True,
@@ -248,7 +258,7 @@ class ProcessIsolationPlugin(nose.plugins.Plugin):
             '--doctest-options': True,
             '--no-skip': False,
         }
-        filtered = set(whitelist.keys()).intersection(set(sys.argv[nosearg + 1:]))
+        filtered = set(whitelist.keys()).intersection(set(sys.argv[offset:]))
         result = []
         for key in filtered:
             result.append(key)
@@ -257,7 +267,7 @@ class ProcessIsolationPlugin(nose.plugins.Plugin):
 
         # We are not finished yet: options with '=' were not handled
         whitelist_keyval = [(k + "=") for k, v in whitelist.items() if v]
-        for arg in sys.argv[nosearg + 1:]:
+        for arg in sys.argv[offset:]:
             for keyval in whitelist_keyval:
                 if arg.startswith(keyval):
                     result.append(arg)

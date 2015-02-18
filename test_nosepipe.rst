@@ -89,7 +89,7 @@ Multiple failing tests:
     ...     argv=["nosetests", "-v", "--with-process-isolation",
     ...           os.path.join(directory_with_tests, "failing")],
     ...     plugins=plugins)
-    ...     # doctest: +REPORT_NDIFF
+    ...     # doctest: +REPORT_NDIFF +ELLIPSIS
     failing_tests.erroring_test ... ERROR
     failing_tests.failing_test ... FAIL
     <BLANKLINE>

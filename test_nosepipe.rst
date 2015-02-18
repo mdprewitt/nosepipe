@@ -110,4 +110,4 @@ Multiple failing tests:
     ----------------------------------------------------------------------
     Ran 2 tests in ...s
     <BLANKLINE>
-    FAILED (errors=1, failures=1)
+    FAILED (...)
